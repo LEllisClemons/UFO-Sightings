@@ -10,6 +10,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import re
 from timezonefinder import TimezoneFinder
+from os import path
+from PIL import Image
+from statsmodels.graphics.mosaicplot import mosaic
+
 tf = TimezoneFinder()
 from wordcloud import WordCloud, STOPWORDS
 
@@ -25,7 +29,7 @@ ufo['longitude '] = pd.to_numeric(ufo['longitude '], errors = 'coerce')
 
 ufo = ufo[(abs(ufo['latitude']) <= 90.0)]
 ufo = ufo[(abs(ufo['longitude ']) <= 180.0)]
-print(np.dtype(ufo['longitude ']))
+#print(np.dtype(ufo['longitude ']))
 
 #Add timezones
 my_func = TimezoneFinder().closest_timezone_at
@@ -41,29 +45,33 @@ comment_txt = ufo['comments'].astype(str).sum()
 comment_txt = re.sub('[!@#$&)(/\.;]','', comment_txt)
 comment_txt = re.sub('[0-9]','', comment_txt)
 comment_txt = comment_txt.lower()
-print(comment_txt[0:2000])
+#print(comment_txt[0:2000])
 
-#stopwords = set(STOPWORDS)
+stopwords = set(STOPWORDS)
 #wc = WordCloud(max_words=1000, stopwords=stopwords, margin=10,
 #               random_state=1).generate(comment_txt)
 
+d = path.dirname("C:\Users\Leahtan\Documents\Python Scripts\ugo.png")
+print(d)
+mask = np.array(Image.open(path.join(d, "ugo.png")))
+print(mask)
 # Generate a word cloud image
-wordcloud = WordCloud().generate(comment_txt)
+#wordcloud = WordCloud(stopwords = stopwords, mask = mask).generate(comment_txt)
 
 # Display the generated image:
-plt.imshow(wordcloud, interpolation='bilinear')
-plt.axis("off")
-plt.show()
+#plt.imshow(wordcloud, interpolation='bilinear')
+#plt.axis("off")
+#plt.show()
 
 
 ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(str).map(lambda x: re.sub(r'\W+', '', x))
 ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(float)
 
-plt.boxplot(ufo['duration (seconds)'], showfliers = False) #Set showfliers to false or else you will be engulfed by the maddness
-plt.show()
+#plt.boxplot(ufo['duration (seconds)'], showfliers = False) #Set showfliers to false or else you will be engulfed by the maddness
+#plt.show()
 
-plt.hist(ufo['duration (seconds)'], range = [0,3000], bins = 100)
-plt.show()
+#plt.hist(ufo['duration (seconds)'], range = [0,3000], bins = 100)
+#plt.show()
 
 #worth categorizing into short, medium, long, and extra-long encounters
 #looks like the majority are short encounters
@@ -71,4 +79,16 @@ plt.show()
 ufo['length'] = 'None'
 
 #where duration < 15 is glimpse, duration 15 < x < 60 is short, 60 < x < 300 is med, 300 < x < 1500 is long, > 1500 is xlong
-#ufo.length[(ufo['duration (seconds)'] < 15)] = 'glimpse'
+
+ufo.loc[ufo['duration (seconds)'] <= 15, ['length']] = 'glimpse'
+ufo.loc[(ufo['duration (seconds)'] > 15) & (ufo['duration (seconds)'] <= 60), ['length']] = 'short'
+ufo.loc[(ufo['duration (seconds)'] > 60) & (ufo['duration (seconds)'] <= 600), ['length']] = 'medium'
+ufo.loc[(ufo['duration (seconds)'] > 600), ['length']] = 'long'
+
+print(ufo)
+
+ufo['length'].value_counts().plot(kind='bar')
+plt.show()
+
+mosaic(ufo, ['length', 'shape'])
+plt.show()

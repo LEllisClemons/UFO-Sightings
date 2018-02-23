@@ -13,7 +13,6 @@ from timezonefinder import TimezoneFinder
 from os import path
 from PIL import Image
 from statsmodels.graphics.mosaicplot import mosaic
-
 tf = TimezoneFinder()
 from wordcloud import WordCloud, STOPWORDS
 
@@ -21,6 +20,7 @@ with open('scrubbed.csv') as datafile:
     ufo = pd.read_csv(datafile, low_memory=False)
 
 ufo = ufo.head(10) #small portion to test
+
 
 #valid latitudes between 90 and -90
 #valid longitudes between 180, -180
@@ -56,22 +56,22 @@ print(d)
 mask = np.array(Image.open(path.join(d, "ugo.png")))
 print(mask)
 # Generate a word cloud image
-#wordcloud = WordCloud(stopwords = stopwords, mask = mask).generate(comment_txt)
+wordcloud = WordCloud(stopwords = stopwords, mask = mask).generate(comment_txt)
 
 # Display the generated image:
-#plt.imshow(wordcloud, interpolation='bilinear')
-#plt.axis("off")
-#plt.show()
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis("off")
+plt.show()
 
 
 ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(str).map(lambda x: re.sub(r'\W+', '', x))
 ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(float)
 
-#plt.boxplot(ufo['duration (seconds)'], showfliers = False) #Set showfliers to false or else you will be engulfed by the maddness
-#plt.show()
+plt.boxplot(ufo['duration (seconds)'], showfliers = False) #Set showfliers to false or else you will be engulfed by the maddness
+plt.show()
 
-#plt.hist(ufo['duration (seconds)'], range = [0,3000], bins = 100)
-#plt.show()
+plt.hist(ufo['duration (seconds)'], range = [0,3000], bins = 100)
+plt.show()
 
 #worth categorizing into short, medium, long, and extra-long encounters
 #looks like the majority are short encounters
@@ -90,5 +90,40 @@ print(ufo)
 ufo['length'].value_counts().plot(kind='bar')
 plt.show()
 
+print(len(ufo['shape'].unique()))
+print(ufo['shape'].unique())
+
 mosaic(ufo, ['length', 'shape'])
 plt.show()
+
+ufo['timezone'].value_counts().plot(kind = 'bar')
+plt.show()
+
+mosaic(ufo, ['timezone', 'length'])
+plt.show()
+
+mosaic(ufo, ['timezone', 'shape'])
+plt.show()
+
+
+ufo['year']=pd.to_numeric(ufo['datetime'].str[::-1].str[6:10].str[::-1])
+ufo['date']=pd.to_datetime(ufo['datetime'].str[::-1].str[6:].str[::-1])
+ufo['time'] = pd.to_datetime(ufo['datetime'].str[-5:],format= '%H:%M' ).dt.time
+ufo['weekday']=ufo['date'].dt.weekday
+
+
+ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(str).map(lambda x: re.sub(r'\W+', '', x))
+ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(float)
+weekdays = ufo[ufo['weekday']<5]
+weekends = ufo[ufo['weekday']>=5]
+weekdays.hist('year', range = [1962,2012], bins = 50)
+plt.show()
+
+ufo['workday']='No'
+ufo.loc[ufo['weekday']<5, ['workday']]='Yes'
+
+ufo.hist('weekday', bins=7)
+plt.show()
+
+print(ufo.head(10))
+

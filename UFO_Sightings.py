@@ -5,6 +5,12 @@ Created on Fri Feb 02 18:07:56 2018
 @author: Trapeezey
 """
 
+#Will need to scrap mosaic plot data for NaN, Nonetypes, and limit to top 10 most frequent answers
+#Heatmap - Nicole is working on this
+#Labels on graph
+
+
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -106,14 +112,21 @@ mosaic(ufo, ['timezone', 'shape'])
 plt.show()
 
 
+
+#you could do this using regex... but then we'd have to learn regex
 ufo['year']=pd.to_numeric(ufo['datetime'].str[::-1].str[6:10].str[::-1])
 ufo['date']=pd.to_datetime(ufo['datetime'].str[::-1].str[6:].str[::-1])
-ufo['time'] = pd.to_datetime(ufo['datetime'].str[-5:],format= '%H:%M' ).dt.time
+ufo['time']=pd.to_datetime(ufo['datetime'].str[-5:], format = '%H:%M', errors = 'ignore')
+
+#if (pd.to_datetime(ufo['datetime'].str[-5:], format = '%H:%M') == '24:00'):
+#    ufo['time'] = pd.to_datetime(ufo['datetime'].str[-5:], format = '%H:%M')
+#else:
+#    ufo['time'] = pd.to_datetime('24:00', format = '%H:%M')
+
+
 ufo['weekday']=ufo['date'].dt.weekday
 
 
-ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(str).map(lambda x: re.sub(r'\W+', '', x))
-ufo['duration (seconds)'] = ufo['duration (seconds)'].astype(float)
 weekdays = ufo[ufo['weekday']<5]
 weekends = ufo[ufo['weekday']>=5]
 weekdays.hist('year', range = [1962,2012], bins = 50)
@@ -125,5 +138,13 @@ ufo.loc[ufo['weekday']<5, ['workday']]='Yes'
 ufo.hist('weekday', bins=7)
 plt.show()
 
+ufo['time of day'] = 'None'
+ufo.loc[(ufo['time'] > pd.to_datetime('06:00', format = '%H:%M')) & (ufo['time'] <= pd.to_datetime('12:00', format = '%H:%M')), ['time of day']] = 'morning'
+ufo.loc[(ufo['time'] > pd.to_datetime('12:00', format = '%H:%M')) & (ufo['time'] <= pd.to_datetime('18:00', format = '%H:%M')), ['time of day']] = 'afternoon'
+ufo.loc[(ufo['time'] > pd.to_datetime('18:00', format = '%H:%M')) & (ufo['time'] <= pd.to_datetime('23:59', format = '%H:%M')), ['time of day']] = 'evening'
+ufo.loc[(ufo['time'] <= pd.to_datetime('06:00', format = '%H:%M')), ['time of day']] = 'night'
+
 print(ufo.head(10))
+plt.hist(ufo['time of day'], bins = 7)
+plt.show()
 
